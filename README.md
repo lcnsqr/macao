@@ -1,4 +1,6 @@
-macao-acidentes
+Macao
 ===============
 
-Mapa de calor de acidentes ocorridos em rodovias federais do Brasil
+Biblioteca javascript para gerar mapas de calor usando elemento canvas HTML5
+
+Autor: Luciano Siqueira <lcnsqr@gmail.com>
