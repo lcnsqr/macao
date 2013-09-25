@@ -80,7 +80,7 @@ Macao.prototype = {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.ctxMask.clearRect(0, 0, this.canvasMask.width, this.canvasMask.height);
 	},
-	plot: function() {
+	plot: function(callback) {
 		// Draw circles on canvas element
 		// based on translated map coords
 		this.clear();
@@ -151,31 +151,27 @@ Macao.prototype = {
 		};
 		var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
 
-		// Change colors based on the alpha value of each pixel
-		for (var y = 0; y < this.canvas.height; y++) {
-			for (var x = 0; x < this.canvas.width; x++) {
-				var index = (y * this.canvas.width + x) * 4;
+		// Change pixels on background process
+		var plotter = new Worker('plotter.js');
+		mapacalor = this;
+		plotter.addEventListener('message', function(event) {
+			// Draw heatmap colors
+			mapacalor.ctx.putImageData(event.data, 0, 0);
 
-				// Store the alpha value of the original pixel
-				var alpha = imageData.data[index + 3];
-				
-				// Ignore transparent pixels
-				if ( alpha == 0 ) continue;
+			// Combine mask
+			mapacalor.ctx.globalCompositeOperation = "destination-in";
+			mapacalor.ctx.drawImage(mapacalor.canvasMask, 0, 0);
 
-				// Color manipulation to generate the heatmap
-				// Use the alpha value to get a color from the color array
-				imageData.data[index]   = cores[alpha][0];
-				imageData.data[++index] = cores[alpha][1];
-				imageData.data[++index] = cores[alpha][2];
-				imageData.data[++index] = 255;
-			}
-		}
+			// Return to the document
+			callback(mapacalor.canvas.toDataURL());
+		}, false);
 
-		// Draw heatmap colors
-		this.ctx.putImageData(imageData, 0, 0);
-
-		// Combine mask
-		this.ctx.globalCompositeOperation = "destination-in";
-		this.ctx.drawImage(this.canvasMask, 0, 0);
+		// Send data to our worker.
+		plotter.postMessage({
+			width: this.canvas.width,
+			height: this.canvas.height,
+			image: imageData,
+			cores: cores
+		}); 
 	}
 }
